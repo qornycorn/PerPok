@@ -7,6 +7,41 @@ function toast(m) {
   clearTimeout(toast.t);
   toast.t = setTimeout(() => ($("toast").textContent = ""), 2200);
 }
+let clearCountdownTimer = null;
+let replyTimer = null;
+
+function stopHumanReplyCountdown() {
+  clearInterval(replyTimer);
+  replyTimer = null;
+  if (G) G.replyCountdown = 0;
+}
+
+function startHumanReplyCountdown() {
+  if (
+    replyTimer ||
+    !G ||
+    G.turn !== 0 ||
+    !G.table ||
+    G.last === 0 ||
+    G.over ||
+    G.openingThrees
+  )
+    return;
+  G.replyCountdown = 5;
+  render();
+  replyTimer = setInterval(() => {
+    if (G.turn !== 0 || !G.table || G.last === 0 || G.over) {
+      stopHumanReplyCountdown();
+      render();
+      return;
+    }
+    G.replyCountdown--;
+    if (G.replyCountdown <= 0) {
+      stopHumanReplyCountdown();
+      humanPass();
+    } else render();
+  }, 1000);
+}
 
 function dealHands() {
   const pictureRanks = new Set(["J", "Q", "K"]);
@@ -32,21 +67,27 @@ function dealHands() {
 }
 
 function newGame() {
+  clearInterval(clearCountdownTimer);
+  clearCountdownTimer = null;
+  stopHumanReplyCountdown();
   const hands = dealHands();
   const first = hands.findIndex((h) => h.includes(THREE_OF_SPADES));
   G = {
     hands,
     table: null,
     last: -1,
-    turn: first,
+    turn: -1,
     passes: 0,
     passed: [],
     first: true,
     openingThrees: true,
+    openingGathering: false,
+    endingPending: false,
     done: [],
     log: [],
     over: false,
     bomWin: false,
+    bombWinner: null,
     bub: {},
     discard: [],
     nextPlayId: 0,
@@ -56,6 +97,8 @@ function newGame() {
     afterHuman: null,
     openingPlayer: first,
     openingPending: true,
+    clearCountdown: 0,
+    replyCountdown: 0,
   };
   sel.clear();
   ver++;
@@ -65,32 +108,63 @@ function newGame() {
   hd.classList.add("deal");
   setTimeout(() => hd.classList.remove("deal"), 1500);
   say(
-    "Kartu dibagi. Pemegang 3♠ jalan duluan; keluarkan semua kartu 3 sebelum permainan dimulai.",
+    "Kartu dibagi. Keluarkan kartu 3 kapan saja; pemegang 3♠ membuka setelah semua 3 keluar.",
   );
   schedule();
 }
 function schedule() {
   clearTimeout(timer);
-  render();
-  if (G.over) return;
-  if (G.turn !== 0) timer = setTimeout(botTurn, fast ? 1200 : 1600);
-}
-function nextThreeHolder(p) {
-  for (let step = 1; step <= 4; step++) {
-    const player = (p + step) % 4;
-    if (
-      !G.done.includes(player) &&
-      G.hands[player].some((card) => rk(card) === 0)
-    )
-      return player;
+  if (G.over || G.endingPending) {
+    render();
+    return;
   }
-  return -1;
+  if (G.openingGathering) {
+    render();
+    timer = setTimeout(
+      G.openingThrees ? gatherOpeningCards : finishOpeningGather,
+      G.openingThrees ? 420 : 760,
+    );
+    return;
+  }
+  if (G.openingThrees) {
+    const botsWithThrees = [1, 2, 3].filter((player) =>
+      G.hands[player].some(
+        (card) => rk(card) === 0 && (card !== THREE_OF_SPADES || openingSpadeReady()),
+      ),
+    );
+    G.turn = -1;
+    if (botsWithThrees.length) {
+      const player = botsWithThrees[Math.floor(Math.random() * botsWithThrees.length)];
+      timer = setTimeout(() => botTurn(player), 520);
+    }
+    render();
+    return;
+  }
+  render();
+  if (G.turn !== 0) timer = setTimeout(botTurn, fast ? 1200 : 1600);
+  else startHumanReplyCountdown();
+}
+function gatherOpeningCards() {
+  G.openingThrees = false;
+  G.table = null;
+  G.last = -1;
+  G.turn = -1;
+  G.bub = {};
+  ver++;
+  render();
+  timer = setTimeout(finishOpeningGather, 760);
+}
+function finishOpeningGather() {
+  G.openingGathering = false;
+  G.turn = G.openingPlayer;
+  say(`Semua kartu 3 sudah berkumpul. ${names[G.turn]} membuka permainan.`);
+  schedule();
 }
 function playOpeningThrees(p, cs) {
+  if (!cs.length || cs.some((card) => rk(card) !== 0)) return false;
   if (
-    !cs.length ||
-    cs.some((card) => rk(card) !== 0) ||
-    (G.first && (cs.length !== 1 || cs[0] !== THREE_OF_SPADES))
+    cs.includes(THREE_OF_SPADES) &&
+    (!openingSpadeReady() || cs.length !== 1)
   )
     return false;
   const combo = classify(cs);
@@ -118,25 +192,20 @@ function playOpeningThrees(p, cs) {
   fast = p !== 0;
   ver++;
   say(`${names[p]} mengeluarkan ${label(combo)} pada pembukaan.`);
-  const next = nextThreeHolder(p);
-  if (next < 0) {
-    G.openingThrees = false;
-    G.table = null;
-    G.last = -1;
-    G.turn = p;
-    G.openingPlayer = p;
-    G.bub = {};
-    say(`Semua kartu 3 sudah keluar. ${names[p]} bebas membuka permainan.`);
-  } else {
-    G.turn = next;
-    say(`${names[next]} keluarkan kartu 3 sebelum permainan dimulai.`);
+  const remainingThrees = G.hands.flat().some((card) => rk(card) === 0);
+  if (!remainingThrees) {
+    G.openingGathering = true;
+    G.turn = -1;
   }
   schedule();
   return true;
 }
 function play(p, cs) {
+  stopHumanReplyCountdown();
   if (G.openingThrees) return playOpeningThrees(p, cs);
   const c = classify(cs);
+  const bombEndsRound =
+    c.t === "bom" && G.table && beats(c, G.table);
   const skakmat =
     c.t === "bom" &&
     G.table &&
@@ -177,7 +246,13 @@ function play(p, cs) {
     G.done.push(p);
     say(`${names[p]} habis! Juara ${G.done.length}`);
   }
-  if (G.done.length >= 3) return endGame();
+  if (bombEndsRound) {
+    G.bombWinner = p;
+    G.bomWin = true;
+    say(`BOM! ${names[p]} mengakhiri ronde dan mendapat bonus poin.`);
+    return endAfterLastCard();
+  }
+  if (G.done.length >= 3) return endAfterLastCard();
   if (skakmat) {
     say(`SKAKMAT! ${names[p]} membatalkan kartu 2.`);
     return clearTable(p);
@@ -191,12 +266,12 @@ function play(p, cs) {
     if (G.turn === 0) toast("Waris! Kamu bebas membuka kombinasi apa saja.");
     return;
   }
-  const opp = active().filter((x) => x !== p);
-  if (!opp.some((o) => combos(G.hands[o]).some((k) => beats(k, c)))) {
-    say(`SAPU BERSIH! Tidak ada yang bisa melawan ${nm(c.v)}.`);
-    if (p === 0) toast("Tidak ada yang bisa melawan. Kamu jalan lagi!");
-    return clearTable(p);
-  }
+  const canRespond = active().some(
+    (player) =>
+      player !== p &&
+      combos(G.hands[player]).some((combo) => beats(combo, c)),
+  );
+  if (!canRespond) return startNoReplyCountdown(p);
   G.turn = nextTurn(p);
   schedule();
 }
@@ -210,7 +285,7 @@ function twoCheck(p, c, skip) {
   );
   if (!owners.length) {
     say(`${names[p]} keluar 2, jalan lagi!`);
-    return clearTable(p);
+    return startNoReplyCountdown(p);
   }
   const o = owners[0];
   G.turn = o;
@@ -218,7 +293,8 @@ function twoCheck(p, c, skip) {
     G.skak = true;
     say("Ada 2! Kamu punya bom, skakmat atau pass?");
     toast("Skakmat pakai bom, atau Pass");
-    return render();
+    render();
+    return startHumanReplyCountdown();
   }
   say(`SKAKMAT! ${names[o]} punya bom.`);
   render();
@@ -260,10 +336,14 @@ function buka3() {
       say(`${names[p]} habis! Juara ${G.done.length}`);
     }
   });
-  if (G.done.length >= 3) return endGame();
+  if (G.done.length >= 3) return endAfterLastCard();
   if (G.done.includes(G.turn)) G.turn = nextActive(G.turn);
 }
 function clearTable(lead) {
+  clearInterval(clearCountdownTimer);
+  clearCountdownTimer = null;
+  G.clearCountdown = 0;
+  stopHumanReplyCountdown();
   const wasBom = G.table && G.table.t === "bom";
   G.afterHuman = null;
   G.table = null;
@@ -283,8 +363,30 @@ function clearTable(lead) {
   say(`${names[G.turn]} bebas membuka.`);
   schedule();
 }
+function startNoReplyCountdown(lead) {
+  clearInterval(clearCountdownTimer);
+  stopHumanReplyCountdown();
+  clearTimeout(timer);
+  G.clearCountdown = 5;
+  G.turn = -1;
+  render();
+  clearCountdownTimer = setInterval(() => {
+    if (G.over || !G.clearCountdown) {
+      clearInterval(clearCountdownTimer);
+      clearCountdownTimer = null;
+      return;
+    }
+    G.clearCountdown--;
+    if (G.clearCountdown <= 0) {
+      clearInterval(clearCountdownTimer);
+      clearCountdownTimer = null;
+      clearTable(lead);
+    } else render();
+  }, 1000);
+}
 function pass(p) {
   if (!G.table || p !== G.turn || p === G.last || G.done.includes(p)) return;
+  stopHumanReplyCountdown();
   if (!G.passed.includes(p)) G.passed.push(p);
   G.passes = G.passed.length;
   say(`${names[p]} pass`);
@@ -300,37 +402,17 @@ function pass(p) {
   G.turn = nextResponder(p);
   schedule();
 }
-function botTurn() {
-  if (G.over) return;
-  const p = G.turn,
+function botTurn(openingPlayer) {
+  if (G.over || G.endingPending) return;
+  const p = openingPlayer ?? G.turn,
     h = G.hands[p],
     t = G.table;
   if (G.openingThrees) {
     const threes = h.filter((card) => rk(card) === 0);
-    if (G.first) {
-      if (h.includes(THREE_OF_SPADES)) return play(p, [THREE_OF_SPADES]);
-      const starter = G.hands.findIndex((hand) =>
-        hand.includes(THREE_OF_SPADES),
-      );
-      if (starter >= 0) {
-        G.turn = starter;
-        return schedule();
-      }
-    }
-    if (threes.length) return play(p, threes);
-    const next = nextThreeHolder(p);
-    if (next >= 0) {
-      G.turn = next;
-      return schedule();
-    }
-    G.openingThrees = false;
-    G.table = null;
-    G.last = -1;
-    G.turn = p;
-    G.openingPlayer = p;
-    G.openingPending = true;
-    ver++;
-    say(`Semua kartu 3 sudah keluar. ${names[p]} bebas membuka permainan.`);
+    const cardsToPlay = threes.filter((card) => card !== THREE_OF_SPADES);
+    if (cardsToPlay.length) return play(p, cardsToPlay);
+    if (openingSpadeReady() && threes.includes(THREE_OF_SPADES))
+      return play(p, [THREE_OF_SPADES]);
     return schedule();
   }
   let opts = combos(h).filter((k) => beats(k, t));
@@ -360,7 +442,8 @@ function botTurn() {
 }
 
 function humanPlay() {
-  if (G.turn !== 0 || G.over) return false;
+  if (G.openingGathering || G.endingPending || (G.turn !== 0 && !G.openingThrees) || G.over)
+    return false;
   const cs = [...sel],
     c = classify(cs);
   if (!c) {
@@ -368,12 +451,12 @@ function humanPlay() {
     return false;
   }
   if (G.openingThrees) {
-    if (cs.some((card) => rk(card) !== 0)) {
+    if (!cs.length || cs.some((card) => rk(card) !== 0)) {
       toast("Saat pembukaan, keluarkan kartu 3 saja");
       return false;
     }
-    if (G.first && (cs.length !== 1 || cs[0] !== THREE_OF_SPADES)) {
-      toast("Pembukaan harus dimulai dengan 3♠ saja");
+    if (cs.includes(THREE_OF_SPADES) && (!openingSpadeReady() || cs.length > 1)) {
+      toast("Kartu 3♠ dikeluarkan terakhir setelah kartu 3 lainnya");
       return false;
     }
     sel.clear();
@@ -389,13 +472,15 @@ function humanPlay() {
     toast("Kartumu belum cukup tinggi");
     return false;
   }
+  stopHumanReplyCountdown();
   sel.clear();
   clearTimeout(timer);
   play(0, cs);
   return true;
 }
 function humanPass() {
-  if (G.turn !== 0 || !G.table || G.over || G.openingThrees) return;
+  if (G.turn !== 0 || !G.table || G.over || G.openingThrees || G.endingPending) return;
+  stopHumanReplyCountdown();
   sel.clear();
   G.undo = null;
   G.reverts = [];
@@ -407,16 +492,44 @@ function humanPass() {
   pass(0);
 }
 
+function endAfterLastCard() {
+  if (G.endingPending || G.over) return;
+  clearTimeout(timer);
+  clearInterval(clearCountdownTimer);
+  clearCountdownTimer = null;
+  stopHumanReplyCountdown();
+  G.endingPending = true;
+  G.turn = -1;
+  render();
+  timer = setTimeout(endGame, 900);
+}
+
 function endGame() {
+  G.endingPending = false;
   G.over = true;
   clearTimeout(timer);
+  clearInterval(clearCountdownTimer);
+  clearCountdownTimer = null;
+  stopHumanReplyCountdown();
   ver++;
-  const loser = active()[0],
+  if (G.bombWinner !== null) {
+    const winner = G.bombWinner;
+    const finishedBeforeBomb = G.done.filter((player) => player !== winner);
+    const remaining = active()
+      .filter(
+        (player) =>
+          player !== winner && !finishedBeforeBomb.includes(player),
+      )
+      .sort((a, b) => G.hands[a].length - G.hands[b].length);
+    G.done = [winner, ...finishedBeforeBomb, ...remaining];
+  } else {
+    G.done.push(active()[0]);
+  }
+  const loser = G.done.at(-1),
     extra = [0, 0, 0, 0];
   if (G.hands[loser].includes(51)) extra[loser] -= 1;
   if (G.hands[loser].length === 13) extra[loser] -= 3;
   if (G.bomWin) extra[G.done[0]] += 1;
-  G.done.push(loser);
   previousWinner = G.done[0];
   const pts = [3, 1, -1, -3];
   G.done.forEach((p, i) => {

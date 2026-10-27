@@ -4,6 +4,18 @@ const THREE_OF_SPADES = 3;
 const rk = (c) => c >> 2,
   st = (c) => c & 3,
   nm = (c) => R[rk(c)] + S[st(c)];
+function openingSpadeReady() {
+  if (!G?.hands || !G?.discard) return false;
+  const playedSuits = new Set(
+    G.discard
+      .filter((group) => group.opening)
+      .flatMap((group) => group.cards.map(st)),
+  );
+  return (
+    G.hands.some((hand) => hand.includes(THREE_OF_SPADES)) &&
+    [0, 1, 2].every((suit) => playedSuits.has(suit))
+  );
+}
 const names = ["Kamu", "Budi", "Citra", "Dedi"],
   TN = {
     single: "Single",
@@ -57,7 +69,8 @@ function classify(cs) {
 }
 function compareRanks(a, b) {
   const rankDifference = rk(a) - rk(b);
-  return rankDifference || st(a) - st(b);
+      if (rankDifference) return rankDifference;
+      return rk(a) === 0 ? st(a) - st(b) : 0;
 }
 function beats(c, t) {
   if (!t) return true;

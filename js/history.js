@@ -2,6 +2,7 @@ function red(c) {
   return st(c) === 0 || st(c) === 2;
 }
 const SN = ["wajik", "keriting", "hati", "sekop"];
+let lastDisplayedTableGroup = null;
 function cd(c, sl, locked = false) {
   const cls = `cd${red(c) ? " r" : ""}${sl ? " s" : ""}`,
     face = `<b>${R[rk(c)]}</b><i>${S[st(c)]}</i>`;
@@ -37,6 +38,7 @@ function snapshotPlayState() {
     log: [...G.log],
     over: G.over,
     bomWin: G.bomWin,
+    bombWinner: G.bombWinner,
     bub: { ...G.bub },
     skak: G.skak,
     show: G.show ? { ...G.show, cs: [...G.show.cs] } : null,
@@ -47,6 +49,8 @@ function snapshotPlayState() {
     afterHuman: G.afterHuman,
     openingPlayer: G.openingPlayer,
     openingPending: G.openingPending,
+    clearCountdown: G.clearCountdown || 0,
+    replyCountdown: G.replyCountdown || 0,
   };
 }
 function rememberUndo(p, c, playId) {
@@ -102,6 +106,9 @@ function applyRevert(i) {
   const entry = G.reverts[i];
   if (!entry) return;
   clearTimeout(timer);
+  clearInterval(clearCountdownTimer);
+  clearCountdownTimer = null;
+  stopHumanReplyCountdown();
   const prior = G.reverts.slice(0, i);
   Object.assign(G, entry.state);
   G.reverts = prior;
@@ -141,6 +148,9 @@ function takeBackPlayedGroup(id) {
   const state = G.playSnapshots[id];
   if (!group || !state || !canTakeBack(group)) return;
   clearTimeout(timer);
+  clearInterval(clearCountdownTimer);
+  clearCountdownTimer = null;
+  stopHumanReplyCountdown();
   const owner = group.player;
   Object.assign(G, state);
   trimPlaySnapshots();
@@ -165,11 +175,48 @@ function allPlayedCards() {
   return [...new Set(allPlayedGroups().flatMap((group) => group.cards))];
 }
 function discardHTML() {
-  const cards = allPlayedCards();
+  if (G.openingThrees) return "";
+  let currentIndex = -1;
+  if (G.table) {
+    const tableCards = new Set(G.table.a);
+    for (let i = G.discard.length - 1; i >= 0; i--) {
+      const group = G.discard[i];
+      if (
+        group.player === G.last &&
+        group.cards.length === tableCards.size &&
+        group.cards.every((card) => tableCards.has(card))
+      ) {
+        currentIndex = i;
+        break;
+      }
+    }
+  }
+  const currentGroup = currentIndex >= 0 ? G.discard[currentIndex] : null;
+  const newlyBuried = new Set();
+  if (
+    lastDisplayedTableGroup &&
+    lastDisplayedTableGroup !== currentGroup &&
+    G.discard.includes(lastDisplayedTableGroup)
+  ) {
+    lastDisplayedTableGroup.cards.forEach((card) => newlyBuried.add(card));
+  }
+  lastDisplayedTableGroup = currentGroup;
+
+  const groups = G.discard.filter((_, index) => index !== currentIndex);
+  const cards = [...new Set(groups.flatMap((group) => group.cards))];
   return cards.length
     ? `<button type="button" class="discard" id="openPlayed" aria-label="Lihat ${cards.length} kartu yang sudah keluar"><span class="discard-fan" aria-hidden="true">${cards
         .slice(-4)
-        .map((c) => cd(c))
+        .map((card, index) => {
+          const pileCard = cd(card).replace(
+            'class="cd',
+            `class="cd${newlyBuried.has(card) ? " pile-arrive" : ""}`,
+          ).replace("<div ", `<div data-c="${card}" `);
+          return pileCard.replace(
+            "<div ",
+            `<div style="--pile-delay:${index * 55}ms" `,
+          );
+        })
         .join("")}</span></button>`
     : "";
 }

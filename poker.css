@@ -32,7 +32,7 @@
       margin: 0;
       background: #000;
       color: var(--fg);
-      font: 17px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+      font: 17px/1.4 "Space Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
       min-height: 100vh;
       font-variant-numeric: tabular-nums
     }
@@ -95,29 +95,52 @@
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
       grid-template-areas: "w n e" "c c c";
-      gap: 18px;
+      column-gap: 18px;
+      row-gap: 66px;
       align-items: start
     }
 
     .pl {
-      display: flex;
-      flex-direction: column;
+      display: grid;
+      grid-template-rows: 18px 36px 18px;
+      gap: 10px;
       align-items: center;
-      gap: 4px;
-      color: var(--mut);
-      font-size: 15px;
-      padding-bottom: 8px;
+      justify-items: center;
+      width: 100%;
+      height: 86px;
+      padding: 4px 8px 6px;
+      border: 0;
       border-bottom: 2px solid transparent;
-      min-width: 0
+      border-radius: 0;
+      background: transparent;
+      color: var(--mut);
+      font-size: 20px;
+      min-width: 0;
+      opacity: .42;
+      transition: opacity .25s ease, color .25s ease
     }
 
     .pl.on {
       color: var(--fg);
-      border-bottom-color: var(--fg)
+      border-bottom-color: transparent;
+      opacity: 1
     }
 
-    .pl.on .n {
-      animation: beat 1.4s ease-in-out infinite
+    .pl-head {
+      width: 100%;
+      min-width: 0;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      white-space: nowrap
+    }
+
+    .pl-name {
+      grid-column: 2;
+      justify-self: center;
+      text-align: center;
+      overflow: hidden;
+      text-overflow: ellipsis
     }
 
     .pl.fin {
@@ -125,41 +148,33 @@
     }
 
     .pl .n {
-      display: inline-block;
-      font-size: 34px;
+      display: block;
+      width: 100%;
+      font-size: 40px;
       font-weight: 600;
-      color: var(--fg)
-    }
-
-    .pl .badge {
-      font-size: 11px;
-      line-height: 1.2;
-      padding: 3px 8px;
-      border-radius: 999px;
-      white-space: nowrap
-    }
-
-    .pl .badge.win {
-      color: #ffe27a;
-      background: #3b3216
-    }
-
-    .pl .badge.start {
-      color: #b6d7ff;
-      background: #17283a
+      line-height: 1;
+      color: var(--fg);
+      text-align: center;
+      transform-origin: center
     }
 
     .bub {
-      font-size: 14px;
+      width: 100%;
+      font-size: 12px;
       color: var(--fg);
-      min-height: 1em;
-      text-align: center
+      min-height: 18px;
+      line-height: 18px;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis
     }
 
     #n {
       grid-area: n;
-      justify-self: center;
-      min-width: 110px
+      justify-self: stretch;
+      min-width: 0;
+      width: 100%
     }
 
     #w {
@@ -172,9 +187,9 @@
 
     #c {
       grid-area: c;
-      min-height: 260px;
+      min-height: 323px;
       border: 3px solid var(--line);
-      border-radius: 28px;
+      border-radius: 63px;
       padding: 20px;
       background: #000;
       box-shadow: 0 18px 40px #000;
@@ -183,10 +198,12 @@
       align-items: center;
       justify-content: center;
       gap: 12px;
-      position: relative
+      position: relative;
+      transition: border-color .25s ease, box-shadow .25s ease
     }
 
-    #c.drag-over {
+    #c.drag-over,
+    #c.turn-active {
       border-color: #8bbcff;
       box-shadow: inset 0 0 60px #19304a, 0 0 26px #6aa8ff66
     }
@@ -246,6 +263,32 @@
       gap: 6px
     }
 
+    .opening-row {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      justify-content: center;
+      gap: 6px
+    }
+
+    .opening-slot {
+      width: 62px;
+      height: 88px;
+      flex: 0 0 auto;
+      border-radius: 17px;
+      background: #858585;
+      box-shadow: 0 2px 4px #0009, 0 10px 18px #000b
+    }
+
+    .opening-row .opening-reveal {
+      animation: opening-card-reveal .34s cubic-bezier(.2, .8, .2, 1) both
+    }
+
+    @keyframes opening-card-reveal {
+      from { opacity: .45; transform: translateY(-18px) scale(.84) }
+      to { opacity: 1; transform: translateY(0) scale(1) }
+    }
+
     @keyframes table-label-fade {
       from { opacity: 0; transform: translateY(5px) }
       to { opacity: 1; transform: translateY(0) }
@@ -292,6 +335,21 @@
       color: transparent;
       transform: rotate(var(--turn));
       transform-origin: 50% 90%
+    }
+
+    .discard-fan .cd.pile-arrive {
+      animation: pile-card-arrive .42s cubic-bezier(.2, .8, .2, 1) var(--pile-delay, 0ms) both
+    }
+
+    @keyframes pile-card-arrive {
+      from {
+        opacity: 0;
+        transform: translateY(-22px) scale(.78) rotate(var(--turn))
+      }
+      to {
+        opacity: 1;
+        transform: rotate(var(--turn))
+      }
     }
 
     .discard-fan .cd b,
@@ -538,12 +596,34 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 40px 0 14px;
+      height: 236px;
+      flex: 0 0 236px;
+      padding: 0 0 14px;
       position: relative;
       margin-top: 14px;
       border-radius: 32px;
       background: transparent
     }
+
+    .empty-hand {
+      width: 126px;
+      height: 126px;
+      position: relative;
+      flex: 0 0 auto;
+      margin-top: 16px
+    }
+
+    .empty-hand span {
+      position: absolute;
+      inset: 0 19px;
+      border-radius: 24px;
+      background: #8b8b8b;
+      box-shadow: 0 8px 20px #000b;
+      transform-origin: 50% 100%
+    }
+
+    .empty-hand span:first-child { transform: translateX(-11px) rotate(-10deg) }
+    .empty-hand span:last-child { transform: translateX(11px) rotate(10deg) }
 
     .lb {
       font-size: 13px;
@@ -560,42 +640,6 @@
 
     #hand .rw+.rw {
       margin-top: -62px
-    }
-
-    #hand.my::before,
-    #hand.turn-ending::before {
-      content: "";
-      position: fixed;
-      left: 0;
-      bottom: 0;
-      width: 100vw;
-      height: min(50vw, 22vh);
-      z-index: 0;
-      pointer-events: none;
-      border-radius: 50% 50% 0 0;
-      background: radial-gradient(ellipse 100% 140% at 50% 100%, rgba(0, 82, 255, .2) 0%, rgba(0, 76, 245, .17) 54%, rgba(0, 68, 225, .09) 78%, transparent 100%);
-      filter: blur(32px);
-      opacity: 0;
-      transform: scaleY(.08);
-      transform-origin: bottom;
-    }
-
-    #hand.my::before {
-      animation: turn-gradient-rise .7s cubic-bezier(.2, .8, .2, 1) forwards
-    }
-
-    #hand.turn-ending::before {
-      animation: turn-gradient-fall .48s ease-in forwards
-    }
-
-    @keyframes turn-gradient-rise {
-      from { opacity: 0; transform: scaleY(.08) }
-      to { opacity: 1; transform: scaleY(1) }
-    }
-
-    @keyframes turn-gradient-fall {
-      from { opacity: 1; transform: scaleY(1) }
-      to { opacity: 0; transform: scaleY(0) }
     }
 
     #hand .cd {
@@ -675,7 +719,7 @@
       font: inherit;
       font-weight: 600;
       font-size: 17px;
-      border-radius: 999px;
+      border-radius: 23px;
       padding: 14px 28px;
       border: 3px solid #333;
       background: transparent;
@@ -880,7 +924,8 @@
 
       .board {
         grid-template-columns: 1fr 1fr 1fr;
-        gap: 10px
+        column-gap: 10px;
+        row-gap: 66px
       }
 
       .pl {
@@ -891,9 +936,14 @@
         font-size: 26px
       }
 
+      #hand {
+        height: 178px;
+        flex-basis: 178px
+      }
+
       #c {
         grid-column: 1/-1;
-        min-height: 200px;
+        min-height: 263px;
         padding: 12px
       }
 
@@ -909,6 +959,12 @@
         font-size: 22px
       }
 
+      .opening-slot {
+        width: 48px;
+        height: 68px;
+        border-radius: 14px
+      }
+
       #hand .cd {
         width: 62px;
         height: 90px;
@@ -916,6 +972,17 @@
         font-size: 32px;
         padding: 9px 8px;
         gap: 4px;
+        border-radius: 19px
+      }
+
+      .empty-hand {
+        width: 100px;
+        height: 90px;
+        margin-top: 16px
+      }
+
+      .empty-hand span {
+        inset: 0 19px;
         border-radius: 19px
       }
 

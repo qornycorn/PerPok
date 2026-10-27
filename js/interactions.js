@@ -1,6 +1,14 @@
 $("hand").addEventListener("pointerdown", (e) => {
   const card = e.target.closest(".cd[data-c]");
-  if (!card || e.button !== 0 || G.turn !== 0 || G.over) return;
+  if (
+    !card ||
+    e.button !== 0 ||
+    G.endingPending ||
+    G.openingGathering ||
+    (G.turn !== 0 && !G.openingThrees) ||
+    G.over
+  )
+    return;
   dragState = {
     pointerId: e.pointerId,
     card: +card.dataset.c,
@@ -112,10 +120,18 @@ window.addEventListener("pointerup", (e) => finishCardDrag(e));
 window.addEventListener("pointercancel", (e) => finishCardDrag(e, true));
 $("hand").addEventListener("click", (e) => {
   if (suppressHandClick) return;
-  const el = e.target.closest(".cd");
-  if (!el) return;
+  if (G.endingPending || G.openingGathering || G.over) return;
+  const el = e.target.closest(".cd[data-c]");
+  if (!el || el.disabled) return;
   const c = +el.dataset.c;
   sel.has(c) ? sel.delete(c) : sel.add(c);
+  render();
+});
+document.addEventListener("click", (e) => {
+  if (!sel.size || e.target.closest(".cd[data-c], button, [role='dialog']"))
+    return;
+  if (e.target.closest("#c") && (G.turn === 0 || G.openingThrees)) return;
+  sel.clear();
   render();
 });
 $("c").addEventListener("click", (e) => {
