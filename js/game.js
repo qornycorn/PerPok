@@ -7,6 +7,45 @@ function toast(m) {
   clearTimeout(toast.t);
   toast.t = setTimeout(() => ($("toast").textContent = ""), 2200);
 }
+const SFX_FILES = {
+  card: "sounds/pop_2.mp3",
+  click: "sounds/denied.mp3",
+};
+const SFX_AUDIO = {};
+const pendingSfx = new Set();
+function playSfx(name) {
+  let audio = SFX_AUDIO[name];
+  if (!audio) {
+    audio = new Audio(new URL(SFX_FILES[name], document.baseURI).href);
+    audio.preload = "auto";
+    audio.addEventListener("error", () => {
+      console.error(`SFX gagal dimuat: ${SFX_FILES[name]}`, audio.error);
+    });
+    SFX_AUDIO[name] = audio;
+  }
+  audio.pause();
+  audio.currentTime = 0;
+  audio.volume = 0.7;
+  audio.play().catch(() => {
+    pendingSfx.add(name);
+  });
+}
+window.addEventListener(
+  "pointerdown",
+  () => {
+    const pending = [...pendingSfx];
+    pendingSfx.clear();
+    pending.forEach(playSfx);
+  },
+  { capture: true },
+);
+document.addEventListener("click", (event) => {
+  const button = event.target.closest("button:not(.cd)");
+  if (button && button.id !== "bPass" && !button.disabled) playSfx("click");
+});
+$("bPass").addEventListener("pointerdown", (event) => {
+  if (event.button === 0 && !$("bPass").disabled) playSfx("click");
+});
 let clearCountdownTimer = null;
 let replyTimer = null;
 
@@ -169,6 +208,7 @@ function playOpeningThrees(p, cs) {
     return false;
   const combo = classify(cs);
   if (!combo) return false;
+  playSfx("card");
   G.hands[p] = G.hands[p].filter((card) => !cs.includes(card));
   G.discard.push({
     id: G.nextPlayId++,
@@ -204,6 +244,8 @@ function play(p, cs) {
   stopHumanReplyCountdown();
   if (G.openingThrees) return playOpeningThrees(p, cs);
   const c = classify(cs);
+  if (!c) return false;
+  playSfx("card");
   const bombEndsRound =
     c.t === "bom" && G.table && beats(c, G.table);
   const skakmat =
