@@ -132,7 +132,8 @@
       display: grid;
       grid-template-columns: 1fr auto 1fr;
       align-items: center;
-      white-space: nowrap
+      white-space: nowrap;
+      margin-top:45px
     }
 
     .pl-name {
@@ -155,7 +156,8 @@
       line-height: 1;
       color: var(--fg);
       text-align: center;
-      transform-origin: center
+      transform-origin: center;
+      margin-top: 50px
     }
 
     .bub {
@@ -279,7 +281,7 @@
     }
 
     .round-result.win strong { color: #f3f3f3 }
-    .round-result.lose strong { color: #858585 }
+    .round-result.lose strong { color: #f3f3f3 }
 
     @keyframes result-pop {
       from { opacity: 0; transform: scale(.18) }
@@ -811,7 +813,7 @@
 
     .btns #bPass:disabled {
       opacity: 1;
-      background: transparent;
+      background: #000;
       border-color: #252525;
       color: #555
     }

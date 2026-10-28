@@ -143,6 +143,21 @@ function newGame() {
   ver++;
   $("over").classList.remove("show");
   $("revert").classList.remove("show");
+  
+  // Animasi fade in untuk konten meja baru
+  const table = $("c");
+  table.style.opacity = '0';
+  setTimeout(() => {
+    table.animate(
+      [
+        { opacity: 0 },
+        { opacity: 1 }
+      ],
+      { duration: 400, easing: "ease-in", fill: "forwards" }
+    );
+    table.style.opacity = '';
+  }, 100);
+  
   const hd = $("hand");
   hd.classList.add("deal");
   setTimeout(() => hd.classList.remove("deal"), 1500);
@@ -623,3 +638,50 @@ function endGame() {
     newGame();
   };
 }
+
+// Cheat functions - gunakan di console browser
+window.cheat = {
+  // Buat semua player sisa 1 kartu (diurutkan dari kecil ke besar)
+  oneCard: () => {
+    if (G.over) {
+      console.warn("Game sudah selesai. Mulai game baru dulu.");
+      return;
+    }
+    
+    // Ambil semua kartu dari semua player
+    const allCards = [];
+    for (let i = 0; i < 4; i++) {
+      allCards.push(...G.hands[i]);
+    }
+    
+    // Urutkan kartu dari kecil ke besar (berdasarkan rank)
+    allCards.sort((a, b) => rk(a) - rk(b));
+    
+    // Bagikan 1 kartu untuk setiap player sesuai urutan
+    for (let i = 0; i < 4; i++) {
+      G.hands[i] = allCards[i] !== undefined ? [allCards[i]] : [];
+    }
+    
+    say("CHEAT: Semua player sisa 1 kartu berurutan!");
+    toast("🎮 Cheat activated: 1 kartu tersisa (berurutan)!");
+    render();
+    console.log("✅ Cheat activated: Semua player sisa 1 kartu");
+    console.log("Urutan kartu dari player 0-3:");
+    for (let i = 0; i < 4; i++) {
+      console.log(`  ${names[i]}: ${G.hands[i].map(c => nm(c)).join(", ")}`);
+    }
+  },
+  
+  // Lihat kartu semua pemain (untuk debugging)
+  showAll: () => {
+    console.log("=== KARTU SEMUA PEMAIN ===");
+    for (let i = 0; i < 4; i++) {
+      const cards = G.hands[i].map(c => nm(c)).join(", ");
+      console.log(`${names[i]}: ${cards} (${G.hands[i].length} kartu)`);
+    }
+  }
+};
+
+console.log("🎮 Cheat tersedia! Gunakan:");
+console.log("  cheat.oneCard() - Buat semua player sisa 1 kartu");
+console.log("  cheat.showAll() - Lihat kartu semua pemain");
