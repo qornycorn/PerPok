@@ -166,10 +166,4 @@ $("revertList").addEventListener("click", (e) => {
 $("revert").addEventListener("click", (e) => {
   if (e.target === $("revert")) closeRevertList();
 });
-$("bCek").onclick = () => {
-  if (G.over || G.last !== 0 || !G.table || G.turn === 0) return;
-  fast = true;
-  say('Kamu: "Ada yang lawan?"');
-  schedule();
-};
 newGame();

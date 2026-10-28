@@ -221,11 +221,12 @@ function discardHTML() {
     : "";
 }
 function showPlayedCards() {
+  const list = $("playedList");
+  const scrollTop = list.scrollTop;
   const groups = allPlayedGroups();
   const cards = [...new Set(groups.flatMap((group) => group.cards))];
-  $("playedCount").textContent =
-    `${cards.length} kartu · terbaru di atas. Tarik kembali membatalkan aksi sesudahnya.`;
-  $("playedList").innerHTML = [...groups]
+  $("playedCount").textContent = `${cards.length} kartu`;
+  list.innerHTML = [...groups]
     .reverse()
     .map((group) => {
       const canRevert = group.revertable && !G.over && !G.done.includes(0);
@@ -233,16 +234,21 @@ function showPlayedCards() {
         ? G.reverts.findIndex((entry) => entry.playId === group.id)
         : -1;
       const revertButton = group.revertable
-        ? `<button type="button" class="played-revert" data-play-id="${group.id}" ${revertIndex < 0 ? "disabled" : ""}>${revertIndex < 0 ? "Revert tidak tersedia" : "Revert lawan"}</button>`
+        ? `<button type="button" class="played-revert" data-play-id="${group.id}" ${revertIndex < 0 ? "disabled" : ""} title="${revertIndex < 0 ? "Revert tidak tersedia" : "Revert lawan"}">Revert</button>`
         : "";
       const takebackReady = canTakeBack(group);
       const takebackButton = group.isPlay
-        ? `<button type="button" class="played-takeback" data-takeback-id="${group.id}" ${takebackReady ? "" : "disabled"} title="${takebackReady ? "Kembalikan kartu ke tangan dan batalkan aksi sesudahnya" : "Tidak tersedia karena kombinasi ini sudah dikalahkan kombinasi yang lebih kuat"}">${takebackReady ? "Tarik kembali" : "Tidak tersedia"}</button>`
+        ? `<button type="button" class="played-takeback" data-takeback-id="${group.id}" ${takebackReady ? "" : "disabled"} title="${takebackReady ? "Kembalikan kartu ke tangan dan batalkan aksi sesudahnya" : "Tidak tersedia karena kombinasi ini sudah dikalahkan kombinasi yang lebih kuat"}">Tarik Kembali</button>`
         : "";
-      return `<article class="played-combo"><div class="played-combo-head"><span><strong>${names[group.player]}</strong> · ${group.combo || "Kartu keluar"}</span><div class="played-combo-actions">${revertButton}${takebackButton}</div></div><div class="played-player-cards">${group.cards.map((c) => cd(c)).join("")}</div></article>`;
+      const comboName = (group.combo || "Kartu keluar").split(" ")[0];
+      return `<article class="played-combo"><div class="played-combo-head"><strong>${names[group.player]}</strong><div class="played-combo-actions">${takebackButton}${revertButton}</div></div><div class="played-combo-content"><div class="played-player-cards">${group.cards.map((c) => cd(c)).join("")}</div><span class="played-combo-name">${comboName}</span></div></article>`;
     })
     .join("");
+  list.scrollTop = scrollTop;
   $("playedCards").classList.add("show");
+}
+function refreshPlayedCardsIfOpen() {
+  if ($("playedCards").classList.contains("show")) showPlayedCards();
 }
 function closePlayedCards() {
   $("playedCards").classList.remove("show");
