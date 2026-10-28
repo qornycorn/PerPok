@@ -243,6 +243,11 @@ function playOpeningThrees(p, cs) {
 function play(p, cs) {
   stopHumanReplyCountdown();
   if (G.openingThrees) return playOpeningThrees(p, cs);
+  if (isFireFinish(G.hands[p], cs)) {
+    if (p === 0) toast("Kebakaran! Kartu 2 tidak boleh jadi kartu terakhir.");
+    else say(`${names[p]} terkena kebakaran: kartu 2 tidak boleh jadi kartu terakhir.`);
+    return false;
+  }
   const c = classify(cs);
   if (!c) return false;
   playSfx("card");
@@ -457,12 +462,19 @@ function botTurn(openingPlayer) {
       return play(p, [THREE_OF_SPADES]);
     return schedule();
   }
-  let opts = combos(h).filter((k) => beats(k, t));
+  let opts = combos(h).filter(
+    (k) => beats(k, t) && !isFireFinish(h, k.a),
+  );
   if (G.first) opts = opts.filter((k) => k.a.includes(3));
   const danger = active().some((o) => o !== p && G.hands[o].length <= 2);
   const key = (k) =>
     (k.t === "bom" ? 2000 : 0) + (rk(k.v) === 12 ? 1000 : 0) + k.v - k.n * 12;
   if (!t) {
+    if (!opts.length && hasOnlyTwos(h)) {
+      say(`${names[p]} terkena kebakaran dan melewatkan giliran buka.`);
+      G.turn = nextTurn(p);
+      return schedule();
+    }
     opts.sort((a, b) => key(a) - key(b));
     return play(p, opts[0].a);
   }
@@ -510,6 +522,10 @@ function humanPlay() {
     toast("Giliran pertama wajib mengeluarkan 3♠");
     return false;
   }
+  if (isFireFinish(G.hands[0], cs)) {
+    toast("Kebakaran! Kartu 2 tidak boleh jadi kartu terakhir.");
+    return false;
+  }
   if (!beats(c, G.table)) {
     toast("Kartumu belum cukup tinggi");
     return false;
@@ -521,7 +537,14 @@ function humanPlay() {
   return true;
 }
 function humanPass() {
-  if (G.turn !== 0 || !G.table || G.over || G.openingThrees || G.endingPending) return;
+  if (G.turn !== 0 || G.over || G.openingThrees || G.endingPending) return;
+  if (!G.table) {
+    if (!hasOnlyTwos(G.hands[0])) return;
+    say("Kebakaran! Kamu tidak bisa membuka dengan kartu 2; giliran diteruskan.");
+    G.turn = nextTurn(0);
+    schedule();
+    return;
+  }
   stopHumanReplyCountdown();
   sel.clear();
   G.undo = null;

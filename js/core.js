@@ -4,6 +4,9 @@ const THREE_OF_SPADES = 3;
 const rk = (c) => c >> 2,
   st = (c) => c & 3,
   nm = (c) => R[rk(c)] + S[st(c)];
+const isFireFinish = (hand, cards) =>
+    hand.length === cards.length && cards.some((card) => rk(card) === 12),
+  hasOnlyTwos = (hand) => hand.length > 0 && hand.every((card) => rk(card) === 12);
 function openingSpadeReady() {
   if (!G?.hands || !G?.discard) return false;
   const playedSuits = new Set(

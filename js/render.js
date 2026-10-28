@@ -254,7 +254,11 @@ function render() {
         })));
   const table = $("c");
   table.classList.toggle("turn-active", me);
-  $("bPass").disabled = !me || !G.table || G.openingThrees || G.openingGathering;
+  $("bPass").disabled =
+    !me ||
+    (!G.table && !hasOnlyTwos(G.hands[0])) ||
+    G.openingThrees ||
+    G.openingGathering;
   $("bCek").disabled =
     G.over || !G.table || G.last !== 0 || G.turn === 0 || G.turn < 0 || G.clearCountdown || G.openingThrees || G.openingGathering;
 }
