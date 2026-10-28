@@ -27,6 +27,7 @@ const names = ["Kamu", "Budi", "Citra", "Dedi"],
     polo: "Polo",
     seri: "Seri",
     bom: "Bom",
+    stop: "Stop Poker",
   };
 let G,
   scores = [0, 0, 0, 0],
@@ -49,7 +50,7 @@ function classify(cs) {
   if (n === 1) return o("single");
   if (n === 2 && same) return o("pair");
   if (n === 3 && same) return o("tris");
-  if (n === 4 && same) return o("bom");
+    if (n === 4 && same) return o("stop");
   if (n === 5) {
     const cnt = {};
     r.forEach((x) => (cnt[x] = (cnt[x] || 0) + 1));
@@ -66,8 +67,10 @@ function classify(cs) {
     a.every((c) => st(c) === st(a[0])) &&
     r.every((x, i) => i === 0 || x === r[i - 1] + 1) &&
     r[n - 1] <= 11
-  )
+  ) {
+    if (n === 5 && r.join(",") === "7,8,9,10,11") return o("bom");
     return o("seri");
+  }
   return null;
 }
 function compareRanks(a, b) {
@@ -79,6 +82,8 @@ function beats(c, t) {
   if (!t) return true;
   const comparison = compareRanks(c.v, t.v);
   if (c.t === "bom") return t.t !== "bom" || comparison > 0;
+  if (c.t === "stop")
+    return ["single", "pair", "tris"].includes(t.t) && rk(t.v) === 12;
   return c.t === t.t && c.n === t.n && comparison > 0;
 }
 function combos(h) {
