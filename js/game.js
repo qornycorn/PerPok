@@ -147,7 +147,7 @@ function newGame() {
   hd.classList.add("deal");
   setTimeout(() => hd.classList.remove("deal"), 1500);
   say(
-    "Kartu dibagi. Keluarkan kartu 3 kapan saja; pemegang 3♠ membuka setelah semua 3 keluar.",
+    "Kartu dibagi. Keluarkan 3; 3♠ terakhir.",
   );
   schedule();
 }
@@ -196,7 +196,7 @@ function gatherOpeningCards() {
 function finishOpeningGather() {
   G.openingGathering = false;
   G.turn = G.openingPlayer;
-  say(`Semua kartu 3 sudah berkumpul. ${names[G.turn]} membuka permainan.`);
+  say(`${names[G.turn]} mulai setelah kartu 3 terkumpul.`);
   schedule();
 }
 function playOpeningThrees(p, cs) {
@@ -231,7 +231,7 @@ function playOpeningThrees(p, cs) {
   G.show = null;
   fast = p !== 0;
   ver++;
-  say(`${names[p]} mengeluarkan ${label(combo)} pada pembukaan.`);
+  say(`${names[p]}: ${label(combo)}.`);
   const remainingThrees = G.hands.flat().some((card) => rk(card) === 0);
   if (!remainingThrees) {
     G.openingGathering = true;
@@ -244,8 +244,8 @@ function play(p, cs) {
   stopHumanReplyCountdown();
   if (G.openingThrees) return playOpeningThrees(p, cs);
   if (isFireFinish(G.hands[p], cs)) {
-    if (p === 0) toast("Kebakaran! Kartu 2 tidak boleh jadi kartu terakhir.");
-    else say(`${names[p]} terkena kebakaran: kartu 2 tidak boleh jadi kartu terakhir.`);
+    if (p === 0) toast("Kebakaran: 2 tak boleh terakhir.");
+    else say(`${names[p]} kena kebakaran.`);
     return false;
   }
   const c = classify(cs);
@@ -301,25 +301,25 @@ function play(p, cs) {
   if (bombEndsRound) {
     G.bombWinner = p;
     G.bomWin = true;
-    say(`BOM! ${names[p]} mengakhiri ronde dan mendapat bonus poin.`);
+    say(`Bom! ${names[p]} menang ronde.`);
     return endAfterLastCard();
   }
   if (G.done.length >= 3) return endAfterLastCard();
   if (stopPoker) {
-    say(`STOP POKER! ${names[p]} menghentikan giliran ulang kartu 2.`);
+    say(`Stop Poker! ${names[p]} menghentikan 2.`);
     return clearTable(p);
   }
   if (skakmat) {
-    say(`SKAKMAT! ${names[p]} membatalkan kartu 2.`);
+    say(`Skakmat! ${names[p]} batalkan 2.`);
     return clearTable(p);
   }
   if (["single", "pair", "tris"].includes(c.t) && rk(c.v) === 12)
     return twoCheck(p, c, []);
   if (G.done.includes(p)) {
     const heir = nextActive(p);
-    say(`WARIS! ${names[heir]} bebas membuka kombinasi apa saja.`);
+    say(`Waris: ${names[heir]} bebas buka.`);
     clearTable(p);
-    if (G.turn === 0) toast("Waris! Kamu bebas membuka kombinasi apa saja.");
+    if (G.turn === 0) toast("Waris!");
     return;
   }
   const canRespond = active().some(
@@ -347,12 +347,12 @@ function twoCheck(p, c, skip) {
   G.turn = o;
   if (o === 0) {
     G.skak = true;
-    say("Ada 2! Kamu punya bom, skakmat atau pass?");
-    toast("Skakmat pakai bom, atau Pass");
+    say("Ada 2! Bom atau Pass?");
+    toast("Bom / Pass?");
     render();
     return startHumanReplyCountdown();
   }
-  say(`SKAKMAT! ${names[o]} punya bom.`);
+  say(`Skakmat! ${names[o]} punya bom.`);
   render();
   const v = ver;
   setTimeout(() => {
@@ -382,7 +382,7 @@ function buka3() {
   G.show = { cs: got.sort((a, b) => a - b), h: h3 };
   say(
     h3 >= 0
-      ? `Semua buka kartu 3. ${names[h3]} pegang 3♠, jalan duluan!`
+      ? `${names[h3]} pegang 3♠, mulai duluan.`
       : "Semua buka kartu 3.",
   );
   if (h3 >= 0) G.turn = h3;
@@ -416,7 +416,7 @@ function clearTable(lead) {
   }
   G.openingPlayer = G.turn;
   G.openingPending = true;
-  say(`${names[G.turn]} bebas membuka.`);
+  say(`${names[G.turn]} bebas buka.`);
   schedule();
 }
 function startNoReplyCountdown(lead) {
@@ -451,8 +451,8 @@ function pass(p) {
   const remaining = opponents.filter((x) => !G.passed.includes(x));
   if (!remaining.length) {
     const lead = G.last;
-    say(`Semua lawan pass. ${names[lead]} jalan lagi!`);
-    if (lead === 0) toast("Semua lawan pass. Kamu jalan lagi!");
+    say(`Semua pass. ${names[lead]} jalan lagi.`);
+    if (lead === 0) toast("Semua pass. Giliranmu!");
     return clearTable(lead);
   }
   G.turn = nextResponder(p);
@@ -480,7 +480,7 @@ function botTurn(openingPlayer) {
     (k.t === "bom" ? 2000 : 0) + (rk(k.v) === 12 ? 1000 : 0) + k.v - k.n * 12;
   if (!t) {
     if (!opts.length && hasOnlyTwos(h)) {
-      say(`${names[p]} terkena kebakaran dan melewatkan giliran buka.`);
+      say(`${names[p]} kena kebakaran; giliran lewat.`);
       G.turn = nextTurn(p);
       return schedule();
     }
@@ -515,11 +515,11 @@ function humanPlay() {
   }
   if (G.openingThrees) {
     if (!cs.length || cs.some((card) => rk(card) !== 0)) {
-      toast("Saat pembukaan, keluarkan kartu 3 saja");
+      toast("Pembukaan: keluarkan 3 saja.");
       return false;
     }
     if (cs.includes(THREE_OF_SPADES) && (!openingSpadeReady() || cs.length > 1)) {
-      toast("Kartu 3♠ dikeluarkan terakhir setelah kartu 3 lainnya");
+      toast("3♠ harus terakhir.");
       return false;
     }
     sel.clear();
@@ -528,11 +528,11 @@ function humanPlay() {
     return true;
   }
   if (G.first && !cs.includes(THREE_OF_SPADES)) {
-    toast("Giliran pertama wajib mengeluarkan 3♠");
+    toast("Giliran pertama: keluarkan 3♠.");
     return false;
   }
   if (isFireFinish(G.hands[0], cs)) {
-    toast("Kebakaran! Kartu 2 tidak boleh jadi kartu terakhir.");
+    toast("Kebakaran: 2 tak boleh terakhir.");
     return false;
   }
   if (!beats(c, G.table)) {
@@ -549,7 +549,7 @@ function humanPass() {
   if (G.turn !== 0 || G.over || G.openingThrees || G.endingPending) return;
   if (!G.table) {
     if (!hasOnlyTwos(G.hands[0])) return;
-    say("Kebakaran! Kamu tidak bisa membuka dengan kartu 2; giliran diteruskan.");
+    say("Kebakaran: 2 tak bisa buka. Giliran lewat.");
     G.turn = nextTurn(0);
     schedule();
     return;

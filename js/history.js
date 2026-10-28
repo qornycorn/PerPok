@@ -118,9 +118,9 @@ function applyRevert(i) {
   ver++;
   trimPlaySnapshots();
   $("revert").classList.remove("show");
-  say(`${names[entry.player]}: ${entry.combo} dikembalikan. Giliranmu dulu!`);
+  say(`${entry.combo} ${names[entry.player]} dibatalkan. Giliranmu.`);
   render();
-  toast(`Kombinasi ${names[entry.player]} dikembalikan. Kamu jalan dulu!`);
+  toast("Revert!");
 }
 function trimPlaySnapshots() {
   const ids = new Set(G.discard.map((group) => group.id));
@@ -160,13 +160,9 @@ function takeBackPlayedGroup(id) {
   ver++;
   $("playedCards").classList.remove("show");
   $("revert").classList.remove("show");
-  say(
-    `${names[owner]} menarik kembali ${group.combo}. Aksi sesudahnya dibatalkan.`,
-  );
+  say(`${names[owner]} menarik ${group.combo}.`);
   render();
-  toast(
-    `${group.combo} dikembalikan ke tangan ${names[owner]}. Kamu jalan dulu!`,
-  );
+  toast("Ditarik!");
 }
 function allPlayedGroups() {
   return G.discard.map((group) => ({ ...group, cards: [...group.cards] }));
