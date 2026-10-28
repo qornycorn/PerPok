@@ -4,4 +4,6 @@
   # Per · Pok
 </div>
 
+> *"Tahan! Berhitung."* (Kena Bom.)
+
 Peraturan, Konsep, segala macamnya sama dengan di tongkrongan.

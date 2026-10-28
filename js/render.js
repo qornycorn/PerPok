@@ -154,11 +154,25 @@ function animateRoundResult(won, resetScores) {
         { duration: 320, easing: "cubic-bezier(.55, 0, .8, .3)", fill: "forwards" },
       );
       (shrink?.finished || Promise.resolve()).catch(() => {}).then(() => {
-        if (resetScores) {
-          scores = [0, 0, 0, 0];
-          previousWinner = -1;
-        }
-        newGame();
+        setTimeout(() => {
+          // Animasi fade out untuk clear konten meja
+          const fadeOut = table.animate(
+            [
+              { opacity: 1 },
+              { opacity: 0 }
+            ],
+            { duration: 300, easing: "ease-out", fill: "forwards" }
+          );
+          
+          (fadeOut?.finished || Promise.resolve()).catch(() => {}).then(() => {
+            table.style.opacity = '';
+            if (resetScores) {
+              scores = [0, 0, 0, 0];
+              previousWinner = -1;
+            }
+            newGame();
+          });
+        }, 500);
       });
     }, 1600);
   });
@@ -207,7 +221,7 @@ function render() {
           : `<div class="cap">${G.over ? "Ronde selesai" : G.openingThrees ? "Fase awal: keluarkan semua kartu 3" : "Meja kosong, bebas buka"}</div>`) +
       discardHTML();
     if (gatheringOpeningStack) animateOpeningStackGather(openingCardPositions);
-    if (t && G.last > 0 && lastAnimatedPlayVersion !== ver) {
+    if (t && G.last > 0 && !G.over && lastAnimatedPlayVersion !== ver) {
       animateOpponentPlay();
       lastAnimatedPlayVersion = ver;
     }
