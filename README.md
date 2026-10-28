@@ -4,6 +4,6 @@
   # Per · Pok
 </div>
 
-> *"Tahan! Berhitung."* (Kena Bom.)
+> *"Tahan! Berhitung."* 💥Bom
 
 Peraturan, Konsep, segala macamnya sama dengan di tongkrongan.
