@@ -190,7 +190,7 @@
     #c {
       grid-area: c;
       min-height: 323px;
-      border: 3px solid var(--line);
+      border: 2px solid var(--line);
       border-radius: 63px;
       padding: 20px;
       background: #000;

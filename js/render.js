@@ -35,7 +35,7 @@ function fan(l, lab) {
       const locked =
         G.endingPending ||
         (G.openingThrees &&
-          (rk(c) !== 0 || (c === THREE_OF_SPADES && !openingSpadeReady()))) ||
+          (rk(c) !== 0 || (c === THREE_OF_SPADES && !spadeThreeAllowed(0, G.hands[0])))) ||
         (G.openingGathering && rk(c) !== 0);
       return cd(c, sel.has(c), locked).replace(
         "<button",
@@ -235,7 +235,7 @@ function render() {
   }
   const [gd, tr] = split(G.hands[0]);
   const hand = $("hand");
-  const handKey = `${G.hands[0].join(",")}|${G.openingThrees}|${G.openingGathering}|${G.openingThrees && openingSpadeReady()}`;
+  const handKey = `${G.hands[0].join(",")}|${G.openingThrees}|${G.openingGathering}|${G.openingThrees && spadeThreeAllowed(0, G.hands[0])}`;
   if (handKey !== lastRenderedHandKey) {
     const previousCards = lastRenderedHandCards;
     const nextCards = [...G.hands[0]];
@@ -305,7 +305,7 @@ function render() {
     (G.turn === 0 ||
       (G.openingThrees &&
         G.hands[0].some((card) => {
-          return rk(card) === 0 && (card !== THREE_OF_SPADES || openingSpadeReady());
+          return rk(card) === 0 && (card !== THREE_OF_SPADES || spadeThreeAllowed(0, G.hands[0]));
         })));
   const table = $("c");
   table.classList.toggle("turn-active", me);
