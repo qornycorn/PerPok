@@ -253,6 +253,11 @@ function play(p, cs) {
   playSfx("card");
   const bombEndsRound =
     c.t === "bom" && G.table && beats(c, G.table);
+  const stopPoker =
+    c.t === "stop" &&
+    G.table &&
+    ["single", "pair", "tris"].includes(G.table.t) &&
+    rk(G.table.v) === 12;
   const skakmat =
     c.t === "bom" &&
     G.table &&
@@ -300,6 +305,10 @@ function play(p, cs) {
     return endAfterLastCard();
   }
   if (G.done.length >= 3) return endAfterLastCard();
+  if (stopPoker) {
+    say(`STOP POKER! ${names[p]} menghentikan giliran ulang kartu 2.`);
+    return clearTable(p);
+  }
   if (skakmat) {
     say(`SKAKMAT! ${names[p]} membatalkan kartu 2.`);
     return clearTable(p);
@@ -328,7 +337,7 @@ function twoCheck(p, c, skip) {
     (o) =>
       o !== p &&
       !skip.includes(o) &&
-      combos(G.hands[o]).some((k) => k.t === "bom" && beats(k, c)),
+      combos(G.hands[o]).some((k) => ["bom", "stop"].includes(k.t) && beats(k, c)),
   );
   if (!owners.length) {
     say(`${names[p]} keluar 2, jalan lagi!`);
@@ -479,10 +488,10 @@ function botTurn(openingPlayer) {
     return play(p, opts[0].a);
   }
   const same = opts
-    .filter((k) => k.t !== "bom" || t.t === "bom")
+    .filter((k) => !["bom", "stop"].includes(k.t) || t.t === k.t)
     .sort((a, b) => a.v - b.v);
   const boms = opts
-    .filter((k) => k.t === "bom" && t.t !== "bom")
+    .filter((k) => ["bom", "stop"].includes(k.t) && t.t !== k.t)
     .sort((a, b) => a.v - b.v);
   if (same.length) {
     let k = danger ? same.at(-1) : same[0];
@@ -604,14 +613,8 @@ function endGame() {
   const champ = scores.some((s) => s >= 15)
     ? scores.indexOf(Math.max(...scores))
     : -1;
-  $("ovb").innerHTML =
-    `<h2 style="margin:0 0 8px">${G.done[0] === 0 ? "Kamu menang! 🎉" : names[G.done[0]] + " menang"}</h2><ol>${G.done.map((p, i) => `<li>${names[p]}: ${pts[i] >= 0 ? "+" : ""}${pts[i]}${extra[p] ? ` (bonus/denda ${extra[p] > 0 ? "+" : ""}${extra[p]})` : ""}, total ${scores[p]}</li>`).join("")}</ol>` +
-    (champ >= 0
-      ? `<p><b>${names[champ]} juara tongkrongan (15+ poin)!</b></p>`
-      : "") +
-    `<div class="btns"><button id="again">${champ >= 0 ? "Main dari nol" : "Ronde baru"}</button></div>`;
-  $("over").classList.add("show");
-  $("again").focus();
+  $("over").classList.remove("show");
+  animateRoundResult(G.done[0] === 0, champ >= 0);
   $("again").onclick = () => {
     if (champ >= 0) {
       scores = [0, 0, 0, 0];

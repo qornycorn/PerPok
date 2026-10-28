@@ -1,10 +1,6 @@
 function plHTML(i) {
-  const n = G.hands[i].length,
-    b =
-      G.done.includes(i) && !G.over
-        ? "Selesai"
-        : (G.bub[i] || "").split("<br>")[0];
-  return `<div class="pl-head"><span class="pl-name">${names[i]}</span></div><span class="n">${n}</span><span class="bub">${b || "&nbsp;"}</span>`;
+  const n = G.hands[i].length;
+  return `<div class="pl-head"><span class="pl-name">${names[i]}</span></div><span class="n">${n}</span>`;
 }
 function split(h) {
   const cnt = {},
@@ -123,6 +119,51 @@ let lastRenderedOpeningThrees = false;
 let lastRenderedHandKey = null;
 let lastRenderedHandCards = null;
 let lastAnimatedPlayVersion = -1;
+function animateRoundResult(won, resetScores) {
+  const table = $("c");
+  setTimeout(() => {
+  const cards = [...table.querySelectorAll(".row .cd, .opening-row .cd, .discard-fan .cd")];
+  const animations = cards.map((card, index) => {
+    if (typeof card.animate !== "function") return Promise.resolve();
+    const style = getComputedStyle(card);
+    const transform = style.transform === "none" ? "" : style.transform;
+    return card
+      .animate(
+        [
+          { transform, opacity: style.opacity },
+          { transform: `${transform} scale(.08)`, opacity: 0 },
+        ],
+        {
+          duration: 760,
+          delay: index * 32,
+          easing: "cubic-bezier(.55, 0, .8, .3)",
+          fill: "forwards",
+        },
+      )
+      .finished.catch(() => {});
+  });
+  Promise.all(animations).then(() => {
+    table.innerHTML = `<div class="round-result ${won ? "win" : "lose"}"><strong>${won ? "Win!" : "Lose!"}</strong></div>`;
+    setTimeout(() => {
+      const result = table.querySelector(".round-result");
+      const shrink = result?.animate(
+        [
+          { transform: "scale(1)", opacity: 1 },
+          { transform: "scale(.2)", opacity: 0 },
+        ],
+        { duration: 320, easing: "cubic-bezier(.55, 0, .8, .3)", fill: "forwards" },
+      );
+      (shrink?.finished || Promise.resolve()).catch(() => {}).then(() => {
+        if (resetScores) {
+          scores = [0, 0, 0, 0];
+          previousWinner = -1;
+        }
+        newGame();
+      });
+    }, 1600);
+  });
+  }, 1500);
+}
 function render() {
   [
     [1, "w"],
@@ -259,6 +300,5 @@ function render() {
     (!G.table && !hasOnlyTwos(G.hands[0])) ||
     G.openingThrees ||
     G.openingGathering;
-  $("bCek").disabled =
-    G.over || !G.table || G.last !== 0 || G.turn === 0 || G.turn < 0 || G.clearCountdown || G.openingThrees || G.openingGathering;
+  refreshPlayedCardsIfOpen();
 }

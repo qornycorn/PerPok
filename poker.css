@@ -263,6 +263,29 @@
       gap: 6px
     }
 
+    .round-result {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      animation: result-pop .52s cubic-bezier(.2, .8, .2, 1) both
+    }
+
+    .round-result strong {
+      font-size: 50px;
+      font-weight: 400;
+      line-height: 1;
+      letter-spacing: -.05em
+    }
+
+    .round-result.win strong { color: #f3f3f3 }
+    .round-result.lose strong { color: #858585 }
+
+    @keyframes result-pop {
+      from { opacity: 0; transform: scale(.18) }
+      to { opacity: 1; transform: scale(1) }
+    }
+
     .opening-row {
       position: relative;
       z-index: 1;
@@ -368,49 +391,61 @@
       position: fixed;
       inset: 0;
       background: #000d;
-      display: none;
+      display: flex;
       align-items: center;
       justify-content: center;
       padding: 16px;
       z-index: 7;
-      overscroll-behavior: contain
+      overscroll-behavior: contain;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity .22s ease, visibility .22s ease
     }
 
-    #playedCards.show { display: flex }
+    #playedCards.show {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto
+    }
 
     #playedCards .box {
-      background: #0c0c0c;
-      border: 1px solid #2a2a2a;
-      border-radius: 24px;
-      padding: 24px;
-      max-width: 560px;
+      background: #0a0a0a;
+      border: 1px solid #242424;
+      border-radius: 28px;
+      padding: 32px 36px;
+      max-width: 470px;
       width: 100%;
+      height: min(84vh, 760px);
+      display: flex;
+      flex-direction: column;
       box-shadow: 0 24px 60px #000;
       animation: rise .3s ease-out
     }
 
-    #playedCards h2 { margin: 0 0 6px; font-size: 22px }
-    #playedCards p { color: var(--mut); margin: 0 0 16px; font-size: 14px }
+    #playedCards h2 { margin: 0 0 4px; font-size: 22px }
+    #playedCards p { color: var(--mut); margin: 0 0 18px; font-size: 14px }
 
     .played-grid {
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      max-height: 55vh;
+      gap: 0;
+      flex: 1;
+      min-height: 0;
       overflow: auto;
-      padding: 4px
+      padding: 0 2px
     }
 
     .played-grid .cd {
-      width: 58px;
-      height: 82px;
-      margin: auto;
-      border-radius: 15px;
-      padding: 7px;
-      font-size: 25px
+      width: 40px;
+      height: 56px;
+      margin: 0;
+      border-radius: 11px;
+      padding: 5px;
+      font-size: 19px
     }
 
-    .played-grid .cd i { font-size: 24px }
+    .played-grid .cd i { font-size: 17px }
 
     .played-player h3 {
       margin: 8px 0;
@@ -427,24 +462,24 @@
     .played-player-cards {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px
+      gap: 5px
     }
 
     .played-combo {
-      border: 3px solid #333;
-      border-radius: 16px;
-      padding: 12px;
-      background: #121212
+      border: 0;
+      border-bottom: 1px solid #252525;
+      border-radius: 0;
+      padding: 10px 2px;
+      background: transparent
     }
-
-    .played-combo + .played-combo { margin-top: 10px }
 
     .played-combo-head {
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      justify-content: flex-start;
+      flex-wrap: wrap;
       gap: 10px;
-      margin-bottom: 10px;
+      margin-bottom: 9px;
       color: var(--mut);
       font-size: 13px
     }
@@ -457,38 +492,52 @@
     .played-combo-actions {
       display: flex;
       flex-wrap: wrap;
-      justify-content: flex-end;
-      gap: 6px
+      justify-content: flex-start;
+      gap: 5px
+    }
+
+    .played-combo-content {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-height: 56px
+    }
+
+    .played-combo-name {
+      color: var(--mut);
+      font-size: 13px;
+      font-weight: 500;
+      white-space: nowrap
     }
 
     .played-revert {
       flex: none;
-      border: 3px solid #34475a;
+      border: 0;
       border-radius: 999px;
-      padding: 6px 11px;
-      background: #111820;
-      color: #b6d7ff;
+      padding: 3px 9px;
+      background: #10233a;
+      color: #9fcaff;
       font: inherit;
       font-size: 12px;
       cursor: pointer
     }
 
-    .played-revert:hover:not(:disabled) { background: #1b2a39 }
+    .played-revert:hover:not(:disabled) { background: #151a20 }
     .played-revert:disabled { opacity: .4; cursor: not-allowed }
 
     .played-takeback {
       flex: none;
-      border: 3px solid #665322;
+      border: 0;
       border-radius: 999px;
-      padding: 6px 11px;
-      background: #1c180d;
-      color: #ffe27a;
+      padding: 3px 9px;
+      background: #2b260d;
+      color: #e8cf76;
       font: inherit;
       font-size: 12px;
       cursor: pointer
     }
 
-    .played-takeback:hover:not(:disabled) { background: #302710 }
+    .played-takeback:hover:not(:disabled) { background: #19170f }
     .played-takeback:disabled { opacity: .4; cursor: not-allowed }
 
     #playedCards .btns {
@@ -726,7 +775,8 @@
       color: var(--fg);
       cursor: pointer;
       touch-action: manipulation;
-      transition: background-color .12s, color .12s, opacity .12s
+      transition: transform .18s cubic-bezier(.2, .8, .2, 1), background-color .12s, color .12s, opacity .12s;
+      transform: scale(1)
     }
 
     .btns button:hover:not(:disabled) {
@@ -753,8 +803,21 @@
       cursor: default
     }
 
+    .btns #bPass:not(:disabled) {
+      background: #242424;
+      border-color: #242424;
+      color: #fff
+    }
+
+    .btns #bPass:disabled {
+      opacity: 1;
+      background: transparent;
+      border-color: #252525;
+      color: #555
+    }
+
     .btns button:active:not(:disabled) {
-      transform: scale(.95)
+      transform: scale(.94)
     }
 
     #toast {
